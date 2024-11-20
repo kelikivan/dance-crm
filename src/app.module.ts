@@ -7,13 +7,24 @@ import { ClientsModule } from './clients/clients.module';
 import { UsersController } from './users/users.controller';
 import { ClientsController } from './clients/clients.controller';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     AuthModule,
     UsersModule,
-    ClientsModule]
+    ClientsModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: process.env["DATABASE_USER"],
+      password: process.env["DATABASE_PASSWORD"],
+      database: process.env["DATABASE_DB"],
+      entities: [],
+      synchronize: true,
+    }),]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -15,15 +15,15 @@ export class AuthService {
         password: string,
       ): Promise<{ access_token: string }> {
         
-        const user = await this.usersService.getUserByPhone(phone);
+        let [user, pass] = await this.usersService.getUserByPhone(phone);
 
         if (user){
 
-          const match = await bcrypt.compare(password, user.password);
+          const match = await bcrypt.compare(password, pass);
 
           if (match) {
 
-            const payload = { sub: user.id, username: user.name };
+            const payload = { sub: user.id, username: user.name, roles: user.roles };
             return {
               access_token: await this.jwtService.signAsync(payload),
             };

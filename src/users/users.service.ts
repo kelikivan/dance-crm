@@ -3,80 +3,111 @@ import { UserDto } from './dto/user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Like, Repository } from 'typeorm';
+import { GetUsersDto } from './dto/get-users.dto';
+import { PageDto } from 'src/dto/page.dto';
 
 @Injectable()
 export class UsersService {
-  private readonly users: UserDto[] = []
+  constructor(
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+  ) {}
+  
+  async createUser(newUser: CreateUserDto): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        phone: newUser.phone
+      },
+    });
 
-  async createUser(newUser: CreateUserDto) {
-
-    const user = this.users.find(x => x.phone === newUser.phone);
     if (user){
       throw new BadRequestException(`User with phone ${ newUser.phone } already exists.`)
     }
 
-    const maxId = this.users.reduce((max, user) => (user.id > max ? user.id : max), 0);   
-    const nextId = maxId + 1;
-
     const salt = await bcrypt.genSalt();
     const hashPassword = await bcrypt.hash(newUser.password, salt);
 
-    this.users.push({
-        id: nextId,
+    const userEntity = this.usersRepository.create({
         phone: newUser.phone,
         password: hashPassword,
         deleted: false,
     });
+    this.usersRepository.save(userEntity)
   }
 
-  getUsers(searchText?: string): UserDto[] {
-    return this.users.filter(x => !x.deleted && ((!searchText && x.name.includes(searchText)) || searchText))
-  }
+  async getUsers(filter: GetUsersDto): Promise<PageDto<UserDto>> {    
+    var query = this.usersRepository.find();
 
-  getUserById(id: number): UserDto {
-    const user = this.users.find(x => x.id === id);
+    if (!filter.search){
+      query = this.usersRepository
+        .find({
+          where: {
+            phone: Like(`%${filter.search}%`)
+          }
+        });
+    }
 
-    if (user === null){
+    const users = await query.then(items => items.map(e => this.toUserDto(e)));
+
+    const totalCount = await this.usersRepository.count();
+    
+    return new PageDto<UserDto>(users, totalCount);
+  } 
+
+  async getUserById(id: number): Promise<UserDto> {
+    const userEntity = await this.usersRepository.findOneBy({ id });
+
+    if (userEntity === null){
       throw new NotFoundException(`User with id ${ id } not found.`)
     }
 
-    return user;
+    return this.toUserDto(userEntity);
   }
 
-  async getUserByPhone(phone: string): Promise<UserDto>{
-    const user = this.users.find(x => x.phone === phone);
+  async getUserByPhone(phone: string): Promise<[UserDto, string]> {
+    const userEntity = await this.usersRepository.findOne({
+      where: {
+        phone: phone
+      }
+    });
 
-    if (user === null){
+    if (userEntity === null){
       throw new NotFoundException(`User with phone ${ phone } not found.`)
     }
 
-    return user;
+    return [this.toUserDto(userEntity), userEntity.password];
   }
 
-  updateUser(id: number, updateUserDto: UpdateUserDto) {
-    const user = this.users.find(x => x.id === id);
+  async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<void> {
+    const userEntity = await this.usersRepository.findOneBy({ id });
 
-    if (user === null){
+    if (userEntity === null){
       throw new NotFoundException(`User with id ${ id } not found.`)
     }
 
-    function update(arr: UserDto[], id: number, updatedData: Partial<UserDto>): UserDto[] {
-        return arr.map((item) => (item.id === id ? { ...item, ...updatedData } : item))
-      };
-
-    const updatedData = {
-        name: updateUserDto.name
-    }
-    const result = update(this.users, id, updatedData)
+    userEntity.name = updateUserDto.name;
+    await this.usersRepository.update(id, userEntity);
   }
 
-  deleteUser(id: number) {
-    let index: number = this.users.findIndex(x => x.id === id);
+  async deleteUser(id: number): Promise<void> {
+    const userEntity = await this.usersRepository.findOneBy({ id });
 
-    if (index < 0){
+    if (userEntity === null){
       throw new NotFoundException(`User with id ${ id } not found.`)
     }
 
-    this.users.splice(index, 1);
+    await this.usersRepository.delete(id);
+  }
+
+  private toUserDto(entity: User){
+    const dto = new UserDto();
+    dto.id = entity.id;
+    dto.phone = entity.phone;
+    dto.name = entity.name;
+    dto.deleted = entity.deleted;
+    return dto;
   }
 }

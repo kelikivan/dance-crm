@@ -4,6 +4,9 @@ import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags, ApiBasicAuth } from '@nestjs/swagger';
 import { HttpExceptionFilter } from 'src/middlewares/exception.filter';
+import { GetUsersDto } from './dto/get-users.dto';
+import { filter } from 'rxjs';
+import { PageDto } from 'src/dto/page.dto';
 
 @ApiTags('Users')
 @ApiSecurity("Authorization", ["Authorization"])
@@ -12,12 +15,12 @@ import { HttpExceptionFilter } from 'src/middlewares/exception.filter';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
+  @Post()
   @ApiOperation({ summary: "Получение всех пользователей" })
-  @ApiParam({ name: "searchText", required: false, description: "Текст поиска" })
+  @ApiBody({ required: true, description: "Фильтр с пагинацией", type: GetUsersDto  })
   @ApiResponse({ status: HttpStatus.OK, description: "Получен список пользователей", type: UserDto, isArray: true })
-  async getUsers(@Param() searchText?: string): Promise<UserDto[]> {
-    return this.usersService.getUsers(searchText)
+  async getUsers(@Body() filter: GetUsersDto): Promise<PageDto<UserDto>> {
+    return await this.usersService.getUsers(filter);
   }
 
   @Get(':id')
@@ -26,7 +29,7 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK, description: "Получены данные пользователя", type: UserDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Пользователь не найден"})
   async getUserById(@Param('id', ParseIntPipe) id: number): Promise<UserDto>  {
-    return this.usersService.getUserById(id);
+    return await this.usersService.getUserById(id);
   }
 
   @Put(':id')
@@ -38,7 +41,7 @@ export class UsersController {
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body(ValidationPipe) updateUserDto: UpdateUserDto) {
-    return this.usersService.updateUser(id, updateUserDto);
+    return await this.usersService.updateUser(id, updateUserDto);
   }
 
   @Delete(':id')
@@ -47,6 +50,6 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK, description: "Пользователь удален"})
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Пользователь не найден"})
   async deleteUser(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.deleteUser(id);
+    return await this.usersService.deleteUser(id);
   }
 }

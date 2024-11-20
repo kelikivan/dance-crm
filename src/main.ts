@@ -20,11 +20,11 @@ async function bootstrap() {
   .setVersion('1.0')
   .addBearerAuth({
     type: "http",
-    name: "Authorization",
     scheme: 'bearer',
     bearerFormat: 'JWT',
+    name: 'JWT',
     in: "header", 
-    description: "Enter your API key" 
+    description: "Enter JWT token" 
   }, "Authorization")
   .build();
   
