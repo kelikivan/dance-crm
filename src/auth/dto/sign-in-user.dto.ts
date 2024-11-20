@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsPhoneNumber, Length, MinLength } from "class-validator";
+import { IsPhoneNumber, Length, MinLength } from "class-validator";
 
-export class CreateUserDto {
+export class SignInUserDto {
     @ApiProperty({ description: "Номер телефона пользователя", nullable: false })
     @IsPhoneNumber('RU')
     @Length(11)

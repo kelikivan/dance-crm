@@ -1,24 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put, UseFilters, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put, UseFilters, UseGuards, ValidationPipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UserDto } from './dto/user.dto';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags, ApiBasicAuth } from '@nestjs/swagger';
 import { HttpExceptionFilter } from 'src/middlewares/exception.filter';
 
 @ApiTags('Users')
+@ApiSecurity("Authorization", ["Authorization"])
 @Controller('users')
-@UseFilters(HttpExceptionFilter)
+//@UseFilters(HttpExceptionFilter)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @Post()
-  @ApiOperation({ summary: "Добавление пользователя" })
-  @ApiBody({ required: true, description: "Данные для добавления пользователя", type: CreateUserDto  })
-  @ApiResponse({ status: HttpStatus.OK, description: "Пользователь добавлен"})
-  async addUser(@Body(ValidationPipe) createUserDto: CreateUserDto) {
-    this.usersService.addUser(createUserDto)
-  }
 
   @Get()
   @ApiOperation({ summary: "Получение всех пользователей" })
