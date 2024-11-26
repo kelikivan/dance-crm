@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
+import { User } from '../orm/entities/user.entity';
 import { Like, Repository } from 'typeorm';
 import { GetUsersDto } from './dto/get-users.dto';
 import { PageDto } from 'src/dto/page.dto';
